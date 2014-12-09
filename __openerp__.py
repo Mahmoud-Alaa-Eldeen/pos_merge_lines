@@ -25,7 +25,7 @@
 
 {
     'name': 'PoS Merge Lines',
-    'version': '1.0',
+    'version': '1.1.0',
     'category': 'Point of Sale',
     'sequence': 6,
     'summary': 'Extension for the Point of Sale module',

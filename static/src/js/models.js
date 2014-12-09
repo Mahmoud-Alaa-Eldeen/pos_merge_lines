@@ -6,6 +6,30 @@ function openerp_merge_lines(instance, module){
     // Setting Use strict
     "use strict";
     
+    module.MergeLinesPosModel = module.PosModel;
+    module.PosModel = module.MergeLinesPosModel.extend({
+        scan_product: function(parsed_code){
+            var self = this;
+            var selectedOrder = this.get('selectedOrder');
+            if(parsed_code.encoding === 'ean13'){
+                var product = this.db.get_product_by_ean13(parsed_code.base_code);
+            }else if(parsed_code.encoding === 'reference'){
+                var product = this.db.get_product_by_reference(parsed_code.code);
+            }
+
+            if(!product){
+                return false;
+            }
+            
+            if(parsed_code.type === 'weight'){
+                selectedOrder.addProduct(product, {quantity:parsed_code.value, merge:true});
+            }else {
+                module.MergeLinesPosModel.prototype.scan_product.call(self, parsed_code);
+            }
+            return true;
+        },
+    });
+    
     module.MergeLinesOrder = module.Order;
     module.Order = module.MergeLinesOrder.extend({
         addProduct: function(product, options){
@@ -40,6 +64,12 @@ function openerp_merge_lines(instance, module){
             if(added){return;}
             this.get('orderLines').add(line);
             this.selectLine(this.getLastOrderline());
+            
+            // Added compatibility with pos_customer_display module from akretion
+            // that can be found on https://code.launchpad.net/~akretion-team/openerp-pos/201407-pos-code-sprint
+            if (this.pos.config.iface_customer_display == true){
+                this.pos.prepare_text_customer_display('addProduct', {'product' : product, 'options' : options});
+            }
         },
     });
     
